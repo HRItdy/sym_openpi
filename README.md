@@ -330,8 +330,8 @@ First, assign the segmentation info towards each frame by dataset conversion.
 cd ~/sym_openpi
 
 uv run examples/libero/convert_libero_symbolic_to_lerobot.py \
-     --hdf5_dir /home/tiandy/libero_100/libero_90 \
-     --json_dir  /home/tiandy/Symbolic_VLA/libero_vla_labeler/output \
+     --hdf5_dir ~/libero_100/libero_90 \
+     --json_dir  ~/Symbolic_VLA/libero_vla_labeler/output \
      --repo_name local/libero_symbolic
 ```
 
