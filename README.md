@@ -321,3 +321,26 @@ We will collect common issues and their solutions here. If you encounter an issu
 | Import errors when running examples       | Make sure you've installed all dependencies with `uv sync`. Some examples may have additional requirements listed in their READMEs.                    |
 | Action dimensions mismatch                | Verify your data processing transforms match the expected input/output dimensions of your robot. Check the action space definitions in your policy classes.                                  |
 | Diverging training loss                            | Check the `q01`, `q99`, and `std` values in `norm_stats.json` for your dataset. Certain dimensions that are rarely used can end up with very small `q01`, `q99`, or `std` values, leading to huge states and actions after normalization. You can manually adjust the norm stats as a workaround. |
+
+## Enable symbolic segmentaion
+
+First, assign the segmentation info towards each frame by dataset conversion.
+
+```bash
+cd ~/sym_openpi
+
+uv run examples/libero/convert_libero_symbolic_to_lerobot.py \
+     --hdf5_dir /home/tiandy/libero_100/libero_90 \
+     --json_dir  /home/tiandy/Symbolic_VLA/libero_vla_labeler/output \
+     --repo_name local/libero_symbolic
+```
+
+Again, calculate the stats
+
+```bash
+uv run scripts/compute_norm_stats.py --config-name pi0_libero_symbolic
+
+# to enable LORA
+uv run scripts/compute_norm_stats.py --config-name pi0_libero_symbolic_low_mem
+```
+
