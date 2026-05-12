@@ -20,6 +20,7 @@ import openpi.models.tokenizer as _tokenizer
 import openpi.policies.aloha_policy as aloha_policy
 import openpi.policies.droid_policy as droid_policy
 import openpi.policies.libero_policy as libero_policy
+import openpi.policies.libero_symbolic_policy as libero_symbolic_policy
 import openpi.shared.download as _download
 import openpi.shared.normalize as _normalize
 import openpi.training.droid_rlds_dataset as droid_rlds_dataset
@@ -347,6 +348,70 @@ class LeRobotLiberoDataConfig(DataConfigFactory):
         model_transforms = ModelTransformFactory()(model_config)
 
         # We return all data transforms for training and inference. No need to change anything here.
+        return dataclasses.replace(
+            self.create_base_config(assets_dirs, model_config),
+            repack_transforms=repack_transform,
+            data_transforms=data_transforms,
+            model_transforms=model_transforms,
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class LeRobotLiberoSymbolicDataConfig(DataConfigFactory):
+    """Data config for LIBERO with symbolic operator conditioning.
+
+    Expects a LeRobot dataset produced by
+    ``examples/libero/convert_libero_symbolic_to_lerobot.py``.
+
+    Key differences from LeRobotLiberoDataConfig:
+    - ``actions`` are 8-dimensional: 7 robot DoF + 1 segment_done flag.
+      The segment_done dim is 0.0 within a segment and 1.0 at the last frame.
+    - The ``task`` field stores a symbolic prompt built with
+      ``build_symbolic_prompt()``:
+          "Task: {desc}. Now: {op}. State: {prec}."
+    - The delta transform (when enabled) only covers the first 6 joints; the
+      gripper (dim 6) and segment_done (dim 7) stay in absolute space.
+
+    Effects are NOT part of any segment's prompt.  They are implicitly encoded
+    as the preconditions of the following segment and appear there instead.
+    At inference time, poll ``segment_done`` to know when to advance the
+    operator (see ``examples/libero/main_symbolic.py``).
+    """
+
+    extra_delta_transform: bool = False
+
+    @override
+    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
+        repack_transform = _transforms.Group(
+            inputs=[
+                _transforms.RepackTransform(
+                    {
+                        "observation/image": "image",
+                        "observation/wrist_image": "wrist_image",
+                        "observation/state": "state",
+                        "actions": "actions",
+                        "prompt": "prompt",
+                    }
+                )
+            ]
+        )
+
+        data_transforms = _transforms.Group(
+            inputs=[libero_symbolic_policy.LiberoSymbolicInputs(model_type=model_config.model_type)],
+            outputs=[libero_symbolic_policy.LiberoSymbolicOutputs()],
+        )
+
+        if self.extra_delta_transform:
+            # Delta only for the 6 joint dims; gripper (dim 6) and
+            # segment_done (dim 7) remain absolute.
+            delta_action_mask = _transforms.make_bool_mask(6, -2)
+            data_transforms = data_transforms.push(
+                inputs=[_transforms.DeltaActions(delta_action_mask)],
+                outputs=[_transforms.AbsoluteActions(delta_action_mask)],
+            )
+
+        model_transforms = ModelTransformFactory()(model_config)
+
         return dataclasses.replace(
             self.create_base_config(assets_dirs, model_config),
             repack_transforms=repack_transform,
@@ -915,6 +980,61 @@ _CONFIGS = [
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_droid/params"),
         num_train_steps=20_000,
         batch_size=32,
+    ),
+    #
+    # Symbolic LIBERO configs – operator-conditioned fine-tuning.
+    #
+    # These configs train pi0 / pi0.5 on a LIBERO dataset that has been converted
+    # with examples/libero/convert_libero_symbolic_to_lerobot.py.
+    # Each frame carries a symbolic prompt encoding the active operator and its
+    # preconditions, plus an 8th action dimension (segment_done flag).
+    # Swap repo_id to point to your own converted dataset.
+    #
+    TrainConfig(
+        name="pi0_libero_symbolic",
+        model=pi0_config.Pi0Config(),
+        data=LeRobotLiberoSymbolicDataConfig(
+            repo_id="local/libero_symbolic",
+            base_config=DataConfig(prompt_from_task=True),
+            extra_delta_transform=True,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=30_000,
+    ),
+    TrainConfig(
+        name="pi05_libero_symbolic",
+        model=pi0_config.Pi0Config(pi05=True, action_horizon=10, discrete_state_input=False),
+        data=LeRobotLiberoSymbolicDataConfig(
+            repo_id="your_hf_username/libero_symbolic",
+            base_config=DataConfig(prompt_from_task=True),
+            extra_delta_transform=False,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        num_train_steps=30_000,
+        batch_size=256,
+        lr_schedule=_optimizer.CosineDecaySchedule(
+            warmup_steps=10_000,
+            peak_lr=5e-5,
+            decay_steps=1_000_000,
+            decay_lr=5e-5,
+        ),
+        optimizer=_optimizer.AdamW(clip_gradient_norm=1.0),
+        ema_decay=0.999,
+    ),
+    TrainConfig(
+        name="pi0_libero_symbolic_low_mem",
+        model=pi0_config.Pi0Config(paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora", max_token_len=64),
+        data=LeRobotLiberoSymbolicDataConfig(
+            repo_id="local/libero_symbolic",
+            base_config=DataConfig(prompt_from_task=True),
+            extra_delta_transform=True,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=30_000,
+        freeze_filter=pi0_config.Pi0Config(
+            paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+        ).get_freeze_filter(),
+        ema_decay=None,
     ),
     #
     # ALOHA Sim configs. This config is used to demonstrate how to train on a simple simulated environment.
