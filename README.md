@@ -340,7 +340,14 @@ Again, calculate the stats
 ```bash
 uv run scripts/compute_norm_stats.py --config-name pi0_libero_symbolic
 
-# to enable LORA
+# Enable LORA
 uv run scripts/compute_norm_stats.py --config-name pi0_libero_symbolic_low_mem
 ```
+Auxiliary tool
 
+```bash
+# Pure text output
+uv run examples/libero/view_processed_dataset.py --decode #--decode means detokenize language input
+# Enable GUI inspection
+uv run examples/libero/view_processed_dataset.py --gui --decode
+```
