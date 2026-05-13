@@ -4,15 +4,33 @@ This script is used to compute the normalization statistics for a given config. 
 will compute the mean and standard deviation of the data in the dataset and save it
 to the config assets directory.
 """
+print("TOP OF FILE", flush=True)
 
 import numpy as np
+print("imported numpy", flush=True)
+
 import tqdm
+print("imported tqdm", flush=True)
+
 import tyro
+print("imported tyro", flush=True)
 
 import openpi.models.model as _model
-import openpi.shared.normalize as normalize
+print("imported model", flush=True)
+
 import openpi.training.config as _config
+print("imported config", flush=True)
+
 import openpi.training.data_loader as _data_loader
+print("imported data_loader", flush=True)
+# import numpy as np
+# import tqdm
+# import tyro
+
+# import openpi.models.model as _model
+# import openpi.shared.normalize as normalize
+# import openpi.training.config as _config
+# import openpi.training.data_loader as _data_loader
 import openpi.transforms as transforms
 
 
