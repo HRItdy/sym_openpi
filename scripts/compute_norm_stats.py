@@ -4,33 +4,15 @@ This script is used to compute the normalization statistics for a given config. 
 will compute the mean and standard deviation of the data in the dataset and save it
 to the config assets directory.
 """
-print("TOP OF FILE", flush=True)
 
 import numpy as np
-print("imported numpy", flush=True)
-
 import tqdm
-print("imported tqdm", flush=True)
-
 import tyro
-print("imported tyro", flush=True)
 
 import openpi.models.model as _model
-print("imported model", flush=True)
-
+import openpi.shared.normalize as normalize
 import openpi.training.config as _config
-print("imported config", flush=True)
-
 import openpi.training.data_loader as _data_loader
-print("imported data_loader", flush=True)
-# import numpy as np
-# import tqdm
-# import tyro
-
-# import openpi.models.model as _model
-# import openpi.shared.normalize as normalize
-# import openpi.training.config as _config
-# import openpi.training.data_loader as _data_loader
 import openpi.transforms as transforms
 
 
@@ -105,30 +87,27 @@ def create_rlds_dataloader(
 
 
 def main(config_name: str, max_frames: int | None = None):
-    print("loading config...", flush=True)
     config = _config.get_config(config_name)
     data_config = config.data.create(config.assets_dirs, config.model)
-    print("creating dataloader", flush=True)
+
     if data_config.rlds_data_dir is not None:
         data_loader, num_batches = create_rlds_dataloader(
             data_config, config.model.action_horizon, config.batch_size, max_frames
         )
-        print("batch number:", num_batches)
     else:
         data_loader, num_batches = create_torch_dataloader(
             data_config, config.model.action_horizon, config.batch_size, config.model, config.num_workers, max_frames
         )
-        print("batch number:", num_batches)
-    print("dataloader is ready...", flush=True)
+
     keys = ["state", "actions"]
     stats = {key: normalize.RunningStats() for key in keys}
-    print("start to calculate...", flush=True)
+
     for batch in tqdm.tqdm(data_loader, total=num_batches, desc="Computing stats"):
         for key in keys:
             stats[key].update(np.asarray(batch[key]))
 
     norm_stats = {key: stats.get_statistics() for key, stats in stats.items()}
-    print("writing config...", flush=True)
+
     output_path = config.assets_dirs / data_config.repo_id
     print(f"Writing stats to: {output_path}")
     normalize.save(output_path, norm_stats)
