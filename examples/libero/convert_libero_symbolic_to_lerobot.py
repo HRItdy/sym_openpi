@@ -145,7 +145,10 @@ class ConvertArgs:
     repo_name: str = DEFAULT_REPO_NAME
     push_to_hub: bool = False
     fps: int = 10
-
+    # How many frames at the END of each segment get segment_done=1.0.
+    # Should match the replan_steps used at inference so the model learns
+    # to signal done within the execution window, not just at one exact frame.
+    done_window: int = 5
 
 def main(args: ConvertArgs) -> None:
     hdf5_dir = pathlib.Path(args.hdf5_dir)
@@ -250,10 +253,22 @@ def main(args: ConvertArgs) -> None:
                     for t in range(start, min(end + 1, num_frames)):
                         frame_prompts[t] = prompt
 
-                    # Mark the last frame of this segment as done.
-                    last_frame = min(end, num_frames - 1)
-                    segment_done[last_frame] = 1.0
-
+                    # # Mark the last frame of this segment as done.
+                    # last_frame = min(end, num_frames - 1)
+                    # segment_done[last_frame] = 1.0
+                    # Mark the last `done_window` frames of this segment as
+                    # done=1.0 (not just the single end_frame).  This gives the
+                    # model a learnable ramp-up region rather than a single-
+                    # frame spike, and ensures the signal falls within the
+                    # replan window at inference time.
+                    # The LAST segment of each demo is NOT marked done (the task
+                    # is complete; there is no next operator to switch to).
+                    is_last_segment = (seg is demo_segments[-1])
+                    if not is_last_segment:
+                        done_start = max(start, end - args.done_window + 1)
+                        done_end = min(end + 1, num_frames)
+                        segment_done[done_start:done_end] = 1.0
+               
                 # Fall back to task description for any un-annotated frames.
                 fallback_prompt = f"Task: {task_description}."
                 for t in range(num_frames):
