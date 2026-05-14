@@ -1005,7 +1005,7 @@ _CONFIGS = [
         name="pi05_libero_symbolic",
         model=pi0_config.Pi0Config(pi05=True, action_horizon=10, discrete_state_input=False),
         data=LeRobotLiberoSymbolicDataConfig(
-            repo_id="your_hf_username/libero_symbolic",
+            repo_id="local/libero_symbolic",
             base_config=DataConfig(prompt_from_task=True),
             extra_delta_transform=False,
         ),
