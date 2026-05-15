@@ -990,23 +990,37 @@ _CONFIGS = [
     # preconditions, plus an 8th action dimension (segment_done flag).
     # Swap repo_id to point to your own converted dataset.
     #
+    # TrainConfig(
+    #     name="pi0_libero_symbolic",
+    #     model=pi0_config.Pi0Config(),
+    #     data=LeRobotLiberoSymbolicDataConfig(
+    #         repo_id="local/libero_symbolic",
+    #         base_config=DataConfig(prompt_from_task=True),
+    #         extra_delta_transform=True,
+    #     ),
+    #     weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+    #     num_train_steps=30_000,
+    # ),
     TrainConfig(
         name="pi0_libero_symbolic",
-        model=pi0_config.Pi0Config(),
+        model=pi0_config.Pi0Config(max_token_len=64),
         data=LeRobotLiberoSymbolicDataConfig(
             repo_id="local/libero_symbolic",
             base_config=DataConfig(prompt_from_task=True),
             extra_delta_transform=True,
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
-        num_train_steps=30_000,
+        num_train_steps=50_000,
+        batch_size=32,                          # local per-GPU batch
+        fsdp_devices=4,                         # number of GPUs
         save_interval=50_000,
     ),
+
     TrainConfig(
         name="pi05_libero_symbolic",
-        model=pi0_config.Pi0Config(pi05=True, action_horizon=10, discrete_state_input=False),
+        model=pi0_config.Pi0Config(pi05=True, action_horizon=10, discrete_state_input=False, max_token_len=64),
         data=LeRobotLiberoSymbolicDataConfig(
-            repo_id="your_hf_username/libero_symbolic",
+            repo_id="local/libero_symbolic",
             base_config=DataConfig(prompt_from_task=True),
             extra_delta_transform=False,
         ),
@@ -1021,6 +1035,9 @@ _CONFIGS = [
         ),
         optimizer=_optimizer.AdamW(clip_gradient_norm=1.0),
         ema_decay=0.999,
+        num_train_steps=50_000,
+        batch_size=32,                          # local per-GPU batch
+        fsdp_devices=4,                         # number of GPUs
         save_interval=50_000,
     ),
     TrainConfig(
@@ -1037,6 +1054,9 @@ _CONFIGS = [
             paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
         ).get_freeze_filter(),
         ema_decay=None,
+        num_train_steps=50_000,
+        batch_size=32,                          # local per-GPU batch
+        fsdp_devices=4,                         # number of GPUs
         save_interval=50_000,
     ),
     #
