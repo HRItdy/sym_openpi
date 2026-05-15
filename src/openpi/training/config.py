@@ -1000,6 +1000,7 @@ _CONFIGS = [
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
         num_train_steps=30_000,
+        save_interval=50_000,
     ),
     TrainConfig(
         name="pi05_libero_symbolic",
@@ -1020,6 +1021,7 @@ _CONFIGS = [
         ),
         optimizer=_optimizer.AdamW(clip_gradient_norm=1.0),
         ema_decay=0.999,
+        save_interval=50_000,
     ),
     TrainConfig(
         name="pi0_libero_symbolic_low_mem",
@@ -1035,6 +1037,7 @@ _CONFIGS = [
             paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
         ).get_freeze_filter(),
         ema_decay=None,
+        save_interval=50_000,
     ),
     #
     # ALOHA Sim configs. This config is used to demonstrate how to train on a simple simulated environment.
