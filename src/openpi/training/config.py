@@ -1036,7 +1036,7 @@ _CONFIGS = [
         ema_decay=0.999,
         num_train_steps=50_000,
         fsdp_devices=4,                         # number of GPUs
-        save_interval=50_000,
+        save_interval=10_000,
     ),
     TrainConfig(
         name="pi0_libero_symbolic_low_mem",
@@ -1054,7 +1054,7 @@ _CONFIGS = [
         num_train_steps=50_000,
         batch_size=32,                          # local per-GPU batch
         fsdp_devices=4,                         # number of GPUs
-        save_interval=50_000,
+        save_interval=10_000,
     ),
     #
     # ALOHA Sim configs. This config is used to demonstrate how to train on a simple simulated environment.
