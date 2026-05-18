@@ -1005,7 +1005,7 @@ _CONFIGS = [
         name="pi0_libero_symbolic",
         model=pi0_config.Pi0Config(max_token_len=64),
         data=LeRobotLiberoSymbolicDataConfig(
-            repo_id="local/libero_symbolic",
+            repo_id="local/libero_symbolic_no_task",
             base_config=DataConfig(prompt_from_task=True),
             extra_delta_transform=True,
         ),

@@ -506,7 +506,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(
         description="Inspect one fully-transformed sample as seen by the JAX model"
     )
-    ap.add_argument("--config-name",   default="pi0_libero_symbolic_low_mem",
+    ap.add_argument("--config-name",   default="pi0_libero_symbolic",
                     help="TrainConfig name (default: pi0_libero_symbolic_low_mem)")
     ap.add_argument("--sample-index",  type=int, default=0,
                     help="Index into the dataset (default: 0)")

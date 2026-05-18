@@ -128,8 +128,8 @@ def build_symbolic_prompt(
     prec_str = "; ".join(preconditions) if preconditions else "none"
     return (
         #f"Task: {task_description}. "
-        f"Action: {operator_description}. "
         f"Precondition: {prec_str}."
+        f"Action: {operator_description}. " 
     )
 
 
@@ -247,7 +247,7 @@ def main(args: ConvertArgs) -> None:
 
                     prompt = build_symbolic_prompt(
                         #task_description=task_description,
-                        operator_description=ann["description"],
+                        operator_description=ann["operator"],
                         preconditions=ann["preconditions"],
                     )
                     for t in range(start, min(end + 1, num_frames)):
