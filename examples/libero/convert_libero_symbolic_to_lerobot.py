@@ -120,16 +120,16 @@ def _parse_image(img: np.ndarray) -> np.ndarray:
 
 
 def build_symbolic_prompt(
-    task_description: str,
+    #task_description: str,
     operator_description: str,
     preconditions: list[str],
 ) -> str:
     """Return the symbolic prompt for one operator segment."""
     prec_str = "; ".join(preconditions) if preconditions else "none"
     return (
-        f"Task: {task_description}. "
-        f"Now: {operator_description}. "
-        f"State: {prec_str}."
+        #f"Task: {task_description}. "
+        f"Action: {operator_description}. "
+        f"Precondition: {prec_str}."
     )
 
 
@@ -246,7 +246,7 @@ def main(args: ConvertArgs) -> None:
                     ann = seg["annotation"]
 
                     prompt = build_symbolic_prompt(
-                        task_description=task_description,
+                        #task_description=task_description,
                         operator_description=ann["description"],
                         preconditions=ann["preconditions"],
                     )
